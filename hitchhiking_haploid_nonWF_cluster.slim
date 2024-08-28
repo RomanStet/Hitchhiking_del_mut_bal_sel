@@ -1,0 +1,109 @@
+initialize() {
+	initializeSLiMModelType("nonWF");
+	if (exists("slimgui")) {
+		defineConstant("N",1000);
+		defineConstant("rab",0.0001);
+		defineConstant("sb",0.1);
+		defineConstant("sd",0.02);
+	}
+	
+	defineConstant("SIM_ID", getSeed());
+	initializeMutationRate(0);
+	
+	// deleterious allele with selection coefficient sd and fully dominant (because of haploid selection)
+	initializeMutationType("m1", 1.0, "f", -sd);
+	// balanced allele under negative frequency-dependent selection (implemented in the fitnessEffect callback)
+	initializeMutationType("m2", 0.5, "f", 0.0);
+	
+	// g1 genomic element type: uses m1 for all mutations
+	initializeGenomicElementType("g1", m1, 1.0);
+	
+	// 2 sites along the chromosome
+	initializeGenomicElement(g1, 0, 1);
+	initializeRecombinationRate(rab);
+	
+	c(m1,m2).convertToSubstitution = T;
+
+}
+
+1 early() {
+	sim.addSubpop("p1", N, haploid=T);
+	setwd("/home/rstetsen/hitchhiking_slim/");
+}
+
+1 late () {
+	target=sample(p1.individuals,1);
+	target.genome1.addNewDrawnMutation(m1,0);
+	target.genome1.addNewDrawnMutation(m2,1);
+	defineConstant("CHECKPOINT", "slim_" + SIM_ID + ".txt");
+	sim.outputFull(CHECKPOINT);
+}
+
+1: late(){	// fitness scaling to implement balancing selection and checking conditions for hitchhiking
+	delmut=sim.subpopulations.individuals.genome1.mutationsOfType(m1);
+	balmut=sim.subpopulations.individuals.genome1.mutationsOfType(m2);
+	
+	if (size(delmut)!=0)
+	{
+		freqdel=sim.mutationFrequencies(NULL,delmut)[0];
+	}
+	
+	if (size(balmut)!=0)
+	{
+		freqbal=sim.mutationFrequencies(NULL,balmut)[0];
+	}
+	
+	if (size(balmut)!=0) {
+		allelea=sim.subpopulations.individuals[sim.subpopulations.individuals.genome1.countOfMutationsOfType(m1)>=1];
+		allelea.fitnessScaling=1.0 - sb*freqbal;
+		alleleA=sim.subpopulations.individuals[sim.subpopulations.individuals.genome1.countOfMutationsOfType(m1)==0];
+		alleleA.fitnessScaling=1.0 - sb*(1-freqbal);
+	}
+	
+	equfreq=(sb-sd)/(sb*(2-sd));
+	
+	if (size(balmut)==0) {
+		sim.readFromPopulationFile(CHECKPOINT);
+	}
+	
+	if (size(balmut)!=0)
+	{
+		if (freqbal>=equfreq) {
+			if (size(delmut)!=0)
+			{
+				if (freqdel>=equfreq) {
+					writeFile(paste("out_N",N,"_sb",sb,"_sd",sd,"_rab",rab,".txt",sep=""), paste(sim.cycle ,"1"),append=T);
+					sim.simulationFinished();
+				}
+			} else {
+				writeFile(paste("out_N",N,"_sb",sb,"_sd",sd,"_rab",rab,".txt",sep=""), paste(sim.cycle ,"0"),append=T);
+				sim.simulationFinished();
+			}
+		}
+	}
+	
+
+}
+
+50000 late(){
+	writeFile(paste("out_N",N,"_sb",sb,"_sd",sd,"_rab",rab,".txt"), paste(sim.cycle ,"TIME EXPIRED"),append=T);
+	sim.simulationFinished();
+}
+
+reproduction() {
+	// parents are chosen proportional to fitness
+	inds = p1.individuals;
+	fitness = p1.cachedFitness(NULL);
+	parents1 = sample(inds, N, replace=T, weights=fitness);
+	parents2 = sample(inds, N, replace=T, weights=fitness);
+	for (i in seqLen(N)) {
+		breaks = sim.chromosome.drawBreakpoints();
+		p1.addRecombinant(parents1[i].genome1, parents2[i].genome1,breaks,NULL,NULL,NULL,randomizeStrands = T);
+	}
+	self.active = 0;
+}
+
+survival() {
+	// survival is independent of fitness; parents die, offspring live
+	return (individual.age == 0);
+}
