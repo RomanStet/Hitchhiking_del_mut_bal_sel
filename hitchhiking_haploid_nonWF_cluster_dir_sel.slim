@@ -2,7 +2,7 @@ initialize() {
 	initializeSLiMModelType("nonWF");
 	if (exists("slimgui")) {
 		defineConstant("N",1000);
-		defineConstant("rab",0.0001);
+		defineConstant("rab",0.01);
 		defineConstant("sb",0.1);
 		defineConstant("sd",0.02);
 	}
@@ -13,7 +13,7 @@ initialize() {
 	// deleterious allele with selection coefficient sd and fully dominant (because of haploid selection)
 	initializeMutationType("m1", 1.0, "f", -sd);
 	// balanced allele under negative frequency-dependent selection (implemented when fitness is rescaled as a late event)
-	initializeMutationType("m2", 0.5, "f", 0.0);
+	initializeMutationType("m2", 1.0, "f", sb);
 	
 	// g1 genomic element type: uses m1 for all mutations
 	initializeGenomicElementType("g1", m1, 1.0);
@@ -22,7 +22,7 @@ initialize() {
 	initializeGenomicElement(g1, 0, 1);
 	initializeRecombinationRate(rab);
 	
-	c(m1,m2).convertToSubstitution = T;
+	c(m1,m2).convertToSubstitution = F;
 	m1.mutationStackPolicy = "f";
 	m2.mutationStackPolicy = "f";
 }
@@ -42,6 +42,7 @@ initialize() {
 }
 
 1: late(){	// checking conditions for hitchhiking
+	
 	delmut=sim.subpopulations.individuals.genome1.mutationsOfType(m1);
 	balmut=sim.subpopulations.individuals.genome1.mutationsOfType(m2);
 	
@@ -55,23 +56,21 @@ initialize() {
 		freqbal=sim.mutationFrequencies(NULL,balmut)[0];
 	}
 	
-	equfreq=(sb-sd)/(sb*(2-sd)); // deterministic equilibrium frequency of the deleterious-balancing haplotype
-	
 	if (size(balmut)==0) { // if the balancing allele is lost, the simulation restarts from tick 1
 		sim.readFromPopulationFile(CHECKPOINT);
 	}
 	
 	if (size(balmut)!=0) // if the balancing allele is not lost
 	{
-		if (freqbal>=equfreq) { // and if its frequency reached the deterministic equilibrium value of the deleterious-balancing haplotype
+		if (freqbal==1) { // and if it is fixed
 			if (size(delmut)!=0) // and if the deleterious mutation is not lost
 			{
-				if (freqdel>=equfreq) { // and if the deleterious mutation also reached the deterministic equilibrium value of the deleterious-balancing haplotype
-					writeFile(paste("out_N",N,"_sb",sb,"_sd",sd,"_rab",rab,".txt",sep=""), paste(sim.cycle ,"1"),append=T); // it is recorded as a successful partial hitchhiking in the outputfile
+				if (freqdel==1) { // and if the deleterious mutation is also fixed
+					writeFile(paste("out_dir_sel_N",N,"_sb",sb,"_sd",sd,"_rab",rab,".txt",sep=""), paste(sim.cycle ,"1"),append=T); // it is recorded as a successful partial hitchhiking in the outputfile
 					sim.simulationFinished();
 				}
 			} else { // else
-				writeFile(paste("out_N",N,"_sb",sb,"_sd",sd,"_rab",rab,".txt",sep=""), paste(sim.cycle ,"0"),append=T);
+				writeFile(paste("out_dir_sel_N",N,"_sb",sb,"_sd",sd,"_rab",rab,".txt",sep=""), paste(sim.cycle ,"0"),append=T);
 				sim.simulationFinished();
 			}
 		}
@@ -79,7 +78,7 @@ initialize() {
 }
 
 50000 late(){
-	writeFile(paste("out_N",N,"_sb",sb,"_sd",sd,"_rab",rab,".txt"), paste(sim.cycle ,"TIME EXPIRED"),append=T);
+	writeFile(paste("out_dir_sel_out_N",N,"_sb",sb,"_sd",sd,"_rab",rab,".txt"), paste(sim.cycle ,"TIME EXPIRED"),append=T);
 	sim.simulationFinished();
 }
 
@@ -99,7 +98,7 @@ reproduction(p1) {
 		delmutcount=ind.genome1.countOfMutationsOfType(m1);
 		balmutcount=ind.genome1.countOfMutationsOfType(m2);
 		
-		fitness[i] = (1.0-sd*delmutcount)*((1.0-sb*freqbal)*balmutcount+(sb*(1.0-freqbal)-1.0)*(balmutcount-1.0));	
+		fitness[i] = (1.0-sd*delmutcount)*(1.0+sb*balmutcount);	
 	}
 	
 	parents1 = sample(inds, N, replace=T, weights=fitness);
