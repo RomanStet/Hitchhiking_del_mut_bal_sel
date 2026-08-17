@@ -4,15 +4,15 @@ initialize() {
                 defineConstant("N",10000);
                 defineConstant("rab",0.001);
                 defineConstant("sb",0.07);
-                defineConstant("sd",0.02);
+                defineConstant("sa",0.02);
                 defineConstant("rep",1);
         }
 
         defineConstant("SIM_ID", getSeed());
         initializeMutationRate(0);
 
-        // deleterious allele with selection coefficient sd and fully dominant (because of haploid selection)
-        initializeMutationType("m1", 1.0, "f", -sd);
+        // deleterious allele with selection coefficient sa and fully dominant (because of haploid selection)
+        initializeMutationType("m1", 1.0, "f", -sa);
         // balanced allele under negative frequency-dependent selection (implemented when fitness is rescaled as a late event)
         initializeMutationType("m2", 0.5, "f", 0.0);
 
