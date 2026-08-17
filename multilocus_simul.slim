@@ -4,7 +4,7 @@ initialize() {
                 defineConstant("N",1000);
                 defineConstant("rab",0.000005);
                 defineConstant("sb",0.1);
-                defineConstant("sd",0.002);
+                defineConstant("sa",0.002);
                 defineConstant("mu",0.0000005);
                 defineConstant("equgen",4000);
                 defineConstant("totgen",7000);
@@ -19,7 +19,7 @@ initialize() {
         initializeMutationRate(mu);
 
         // deleterious allele with selection coefficient sd and fully dominant (because of haploid selection)
-        initializeMutationType("m1", 1.0, "f", -sd);
+        initializeMutationType("m1", 1.0, "f", -sa);
         // balanced allele under negative frequency-dependent selection (implemented when fitness is rescaled as a late event)
         initializeMutationType("m2", 0.5, "f", 0.0);
 
@@ -44,8 +44,8 @@ initialize() {
         setwd("/home/rstetsen/hitchhiking_slim/multilocus_haploid_haplo_track/");
         sim.chromosome.setMutationRate(c(mu,0,mu),c(24999,25000,50000));
         sim.setValue("counter", 0);
-        	writeFile(paste("num_del_mut_N",N,"_sb",sb,"_sd",sd,"_rab",rab,"_mu",mu,"_equgen",equgen,"_totgen",totgen,"_sampledind",sampledind,"_rep",rep,"_bal0.txt",sep=""), paste("generation","sample_size","num_seg_del_mut","num_fix_del_mut","load","freq_bal","num_seg_del_haplo1","num_seg_del_haplo0","bal_sel"),append=F);
-		writeFile(paste("num_del_mut_N",N,"_sb",sb,"_sd",sd,"_rab",rab,"_mu",mu,"_equgen",equgen,"_totgen",totgen,"_sampledind",sampledind,"_rep",rep,"_bal1.txt",sep=""), paste("generation","sample_size","num_seg_del_mut","num_fix_del_mut","load","freq_bal","num_seg_del_haplo1","num_seg_del_haplo0","bal_sel"),append=F);
+        	writeFile(paste("num_del_mut_N",N,"_sb",sb,"_sa",sa,"_rab",rab,"_mu",mu,"_equgen",equgen,"_totgen",totgen,"_sampledind",sampledind,"_rep",rep,"_bal0.txt",sep=""), paste("generation","sample_size","num_seg_del_mut","num_fix_del_mut","load","freq_bal","num_seg_del_haplo1","num_seg_del_haplo0","bal_sel"),append=F);
+		writeFile(paste("num_del_mut_N",N,"_sb",sb,"_sa",sa,"_rab",rab,"_mu",mu,"_equgen",equgen,"_totgen",totgen,"_sampledind",sampledind,"_rep",rep,"_bal1.txt",sep=""), paste("generation","sample_size","num_seg_del_mut","num_fix_del_mut","load","freq_bal","num_seg_del_haplo1","num_seg_del_haplo0","bal_sel"),append=F);
 }
 
 GEN_EQU late () {
@@ -101,8 +101,8 @@ GEN_EQU late () {
 	
 			if (sim.getValue("counter") == 1)
 			{
-					writeFile(paste("num_del_mut_N",N,"_sb",sb,"_sd",sd,"_rab",rab,"_mu",mu,"_equgen",equgen,"_totgen",totgen,"_sampledind",sampledind,"_rep",rep,"_bal1.txt",sep=""), paste(sim.cycle,sampledind,num_mut_seg,num_mut_fix,1-mean_fit,bal_freq,num_mut_haplo_bal_1,num_mut_haplo_bal_0,1),append=T);
-			} else {	writeFile(paste("num_del_mut_N",N,"_sb",sb,"_sd",sd,"_rab",rab,"_mu",mu,"_equgen",equgen,"_totgen",totgen,"_sampledind",sampledind,"_rep",rep,"_bal0.txt",sep=""), paste(sim.cycle,sampledind,num_mut_seg,num_mut_fix,1-mean_fit,bal_freq,num_mut_haplo_bal_1,num_mut_haplo_bal_0,0),append=T);
+					writeFile(paste("num_del_mut_N",N,"_sb",sb,"_sa",sa,"_rab",rab,"_mu",mu,"_equgen",equgen,"_totgen",totgen,"_sampledind",sampledind,"_rep",rep,"_bal1.txt",sep=""), paste(sim.cycle,sampledind,num_mut_seg,num_mut_fix,1-mean_fit,bal_freq,num_mut_haplo_bal_1,num_mut_haplo_bal_0,1),append=T);
+			} else {	writeFile(paste("num_del_mut_N",N,"_sb",sb,"_sa",sa,"_rab",rab,"_mu",mu,"_equgen",equgen,"_totgen",totgen,"_sampledind",sampledind,"_rep",rep,"_bal0.txt",sep=""), paste(sim.cycle,sampledind,num_mut_seg,num_mut_fix,1-mean_fit,bal_freq,num_mut_haplo_bal_1,num_mut_haplo_bal_0,0),append=T);
 			}
 	}
       balmut=sim.subpopulations.individuals.haploidGenome1.mutationsOfType(m2);
@@ -138,7 +138,7 @@ reproduction(p1) {
             	    delmutcount=ind.haploidGenome1.countOfMutationsOfType(m1);
                	 balmutcount=ind.haploidGenome1.countOfMutationsOfType(m2);
 
-                	fitness[i] = ((1.0-sd)^delmutcount)*((1.0-sb*freqbal)*balmutcount+(sb*(1.0-freqbal)-1.0)*(balmutcount-1.0));      
+                	fitness[i] = ((1.0-sa)^delmutcount)*((1.0-sb*freqbal)*balmutcount+(sb*(1.0-freqbal)-1.0)*(balmutcount-1.0));      
         		}
         	}
         	if (sim.getValue("counter") == 0)
@@ -147,7 +147,7 @@ reproduction(p1) {
          	       ind = inds[i];
             	    delmutcount=ind.haploidGenome1.countOfMutationsOfType(m1);
 
-                	fitness[i] = (1.0-sd)^delmutcount;      
+                	fitness[i] = (1.0-sa)^delmutcount;      
         		}      	
         	}
 
